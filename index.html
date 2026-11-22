@@ -438,7 +438,7 @@
 
     .thumb-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 6px;
     }
     .thumb {
@@ -617,7 +617,7 @@
       .side .header .brand { font-size: 15px; }
       .right .header .brand { font-size: 14px; }
       .right .header .sub { font-size: 11px; }
-      .thumb-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+      .thumb-grid { grid-template-columns: repeat(4, 1fr); gap: 5px; }
       .field label { min-width: 60px; font-size: 12px; }
       .field input, .field select { font-size: 12px; min-height: 28px; }
       .section { padding: 8px 12px; }
@@ -644,7 +644,7 @@
     }
 
     @media (max-width: 480px) {
-      .thumb-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+      .thumb-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
       .field { gap: 4px; }
       .field label { min-width: 50px; font-size: 11px; }
       .field input, .field select { font-size: 11px; min-height: 24px; padding: 0 6px; }
@@ -771,7 +771,7 @@
     #tSwatch { display: inline-block; width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); vertical-align: middle; background: #fff; }
 
   
-    /* ===== v8.6 ===== */
+    /* ===== v8.7 ===== */
     .fb-grip { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; padding: 0 8px; font-size: 18px; line-height: 30px; color: var(--muted); border-radius: 8px; flex: 0 0 auto; }
     .fb-grip:active { cursor: grabbing; background: var(--accent-soft); }
     .fb-min { min-width: 30px !important; flex: 0 0 auto; }
@@ -792,6 +792,17 @@
     .recipe { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: grid; gap: 6px; }
     .recipe-row { display: flex; gap: 6px; align-items: center; }
     .recipe-row select { flex: 1; min-width: 0; min-height: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: white; font-size: 12px; }
+  
+    /* ===== v8.7 ===== */
+    .thumb-grid { position: relative; }
+    .thumb-grid .thumb .num { font-size: 8px; padding: 0 4px; line-height: 13px; left: 2px; top: 2px; }
+    .thumb-grid .thumb .x { min-width: 0; min-height: 0; width: 15px; height: 15px; line-height: 14px; font-size: 11px; right: 2px; top: 2px; }
+    .thumb-grid .thumb .chk { width: 16px; height: 16px; line-height: 12px; font-size: 10px; left: 2px; bottom: 2px; border-width: 1.5px; }
+    .thumb-grid.mq { touch-action: none; user-select: none; -webkit-user-select: none; }
+    .thumb-grid.mq .thumb img { pointer-events: none; -webkit-user-drag: none; }
+    .mq-rect { position: absolute; border: 1.5px solid var(--accent); background: rgba(31,141,132,.16); border-radius: 3px; pointer-events: none; z-index: 5; }
+    #marqueeBtn.active { background: var(--accent-soft); border-color: var(--accent); }
+    #queueBar .qgrp { display: inline-flex; gap: 6px; align-items: center; }
   </style>
 </head>
 <body>
@@ -814,7 +825,7 @@
         </div>
         <div class="zoom-indicator" id="zoomIndicator">100%</div>
       </div>
-      <div id="queueBar"><button class="small" id="qPrev">◀ 上一张</button><span class="hint" id="qText"></span><button class="small" id="qNext">下一张 ▶</button></div>
+      <div id="queueBar"><span class="qgrp"><button class="small" id="qPrev">◀ 上一张</button><button class="small" id="qDel" title="把当前图从切割队列移除">🗑 删除</button></span><span class="hint" id="qText"></span><button class="small" id="qNext">下一张 ▶</button></div>
       
       <div id="tryBar">
         <div class="trow">
@@ -872,8 +883,9 @@
           <h2>缩略图 <span class="hint" id="detectSummary">0 个图案</span> <button class="small" id="downloadAllBtn" disabled>⬇ 全部</button></h2>
           <div class="sort-row">
             <select id="sortMode"><option value="manual">手动排序</option><option value="source">按文件名</option><option value="heightDesc">高度 ↓</option><option value="heightAsc">高度 ↑</option><option value="areaDesc">面积 ↓</option></select>
-            <button class="small" id="reverseItemsBtn" disabled>倒序</button>
+            <button class="small" id="marqueeBtn" title="开启后：拖动框选缩略图，点图只勾选；关闭后恢复点图预览、拖动换序">▭ 框选</button>
             <button class="small" id="resetOrderBtn" disabled>重置</button>
+            <button class="small" id="delCheckedBtn" disabled>删除</button>
             <button class="small" id="checkAllBtn" disabled>全选</button>
           </div>
           <div id="thumbs" class="thumb-grid"></div>
@@ -1107,6 +1119,7 @@
 <script>
   (function(){
     // ---------- 状态 ----------
+    const mq = { on: false, suppress: false };
     const state = {
       sources: [],
       items: [],
@@ -1333,7 +1346,6 @@
       $('thumbEmpty').style.display=state.items.length?'none':'grid';
       $('downloadAllBtn').disabled=!state.items.length;
       $('layoutBtn').disabled=!state.items.length;
-      $('reverseItemsBtn').disabled=!state.items.length;
       $('resetOrderBtn').disabled=!state.items.length;
       $('downloadSelectedBtn').disabled=state.selected<0;
       $('detectSummary').textContent=`${state.items.length} 个图案`;
@@ -1341,17 +1353,17 @@
       state.items.forEach((item,index)=>{
         const box=document.createElement('div');
         box.className=`thumb ${index===state.selected?'selected':''} ${item.checked?'checked':''}`;
-        box.draggable=true; box.dataset.index=index;
-        const img=document.createElement('img'); img.src=item.canvas.toDataURL('image/png');
+        box.draggable=!mq.on; box.dataset.index=index;
+        const img=document.createElement('img'); img.src=item.canvas.toDataURL('image/png'); if(mq.on) img.draggable=false;
         const num=document.createElement('span'); num.className='num'; num.textContent=index+1;
         const del=document.createElement('button'); del.className='x'; del.textContent='×';
         del.onclick=(ev)=>{ ev.stopPropagation(); state.items.splice(index,1); state.selected=Math.min(state.selected,state.items.length-1); renderThumbs(); syncItemControls(); renderPreview(); };
-        box.onclick=()=>{ state.selected=index; renderThumbs(); syncItemControls(); renderPreview(); openPreview(index); };
+        box.onclick=()=>{ if(mq.on){ if(mq.suppress) return; item.checked=!item.checked; renderThumbs(); return; } state.selected=index; renderThumbs(); syncItemControls(); renderPreview(); openPreview(index); };
         box.addEventListener('dragstart',ev=>{ ev.dataTransfer.setData('text/plain',String(index)); ev.dataTransfer.effectAllowed='move'; box.classList.add('dragging'); });
         box.addEventListener('dragend',()=>box.classList.remove('dragging'));
         box.addEventListener('dragover',ev=>{ ev.preventDefault(); ev.dataTransfer.dropEffect='move'; });
         box.addEventListener('drop',ev=>{ ev.preventDefault(); const from=Number(ev.dataTransfer.getData('text/plain')), to=Number(box.dataset.index); moveItem(from,to); });
-        const chk=document.createElement('span'); chk.className='chk'; chk.textContent=item.checked?'✓':''; chk.onclick=(ev)=>{ ev.stopPropagation(); item.checked=!item.checked; renderThumbs(); };
+        const chk=document.createElement('span'); chk.className='chk'; chk.textContent=item.checked?'✓':''; chk.onclick=(ev)=>{ ev.stopPropagation(); if(mq.suppress) return; item.checked=!item.checked; renderThumbs(); };
         box.append(img,num,del,chk); thumbs.appendChild(box);
       });
     }
@@ -1896,7 +1908,6 @@
     $('downloadSelectedBtn').onclick=()=>{ const item=state.items[state.selected]; if(item) downloadCanvas(item.canvas,`eye_${String(state.selected+1).padStart(2,'0')}.png`); };
     $('downloadAllBtn').onclick=downloadAll;
     $('sortMode').onchange=()=>sortItems($('sortMode').value);
-    $('reverseItemsBtn').onclick=()=>{ const selectedItem=state.items[state.selected]; state.items.reverse(); state.selected=selectedItem?state.items.indexOf(selectedItem):-1; renderThumbs(); syncItemControls(); renderPreview(); };
     $('resetOrderBtn').onclick=()=>{ $('sortMode').value='manual'; sortItems('manual'); };
     $('closePreviewBtn').onclick=closePreview;
     $('prevPreviewBtn').onclick=()=>previewStep(-1);
@@ -1928,10 +1939,30 @@
     }
     function updateQueue(){
       const n=state.sources.length, bar=$('queueBar');
-      bar.style.display=(n>1&&$('cutView').style.display==='block')?'flex':'none'; if(n<=1) return;
-      const s=state.sources[cut.idx], d=state.sources.filter(x=>x.done).length;
+      bar.style.display=(n>=1&&$('cutView').style.display==='block')?'flex':'none';
+      const multi=n>1; ['qPrev','qNext','qText'].forEach(id=>$(id).style.display=multi?'':'none');
+      if(n<1) return;
+      const s=state.sources[cut.idx]; if(!s) return;
+      $('qDel').title=`把「${s.name}」从切割队列移除`;
+      if(!multi) return;
+      const d=state.sources.filter(x=>x.done).length;
       $('qText').textContent=`第 ${cut.idx+1}/${n} 张 · ${s.done?'✓已抠图':'未抠图'} · 完成 ${d}/${n}`; $('qText').title=s.name;
       $('qPrev').disabled=cut.idx<=0; $('qNext').disabled=cut.idx>=n-1;
+    }
+    function delCurSource(){
+      const k=cut.idx, src=state.sources[k]; if(!src) return;
+      if(!confirm(`确认从切割队列移除「${src.name}」？\n（已抠出的眼柄会留在缩略图里）`)) return;
+      state.items.forEach(it=>{ if(it.srcKey===k) it.srcKey=undefined; else if(it.srcKey!==undefined&&it.srcKey>k) it.srcKey--; });
+      state.sources.splice(k,1); cut.ls=null; cut.es=new Set();
+      if(!state.sources.length){
+        cut.idx=0; $('fileInput').value=''; $('fileName').textContent='尚未选择文件'; $('detectBtn').disabled=true;
+        drawCut(); updateQueue(); renderThumbs(); setStatus(`已移除「${src.name}」，切割队列已空`);
+      } else {
+        const ni=Math.min(k,state.sources.length-1); cut.idx=-1; gotoImg(ni);
+        $('fileName').textContent=state.sources.length===1?state.sources[0].name:`已选择 ${state.sources.length} 个文件`;
+        setStatus(`已移除「${src.name}」，现在是第 ${ni+1}/${state.sources.length} 张`);
+      }
+      showToast(`已从队列移除「${src.name}」`,2200);
     }
     function curImg(){ const s=state.sources[cut.idx]; return s&&s.image; }
     function drawCut(){
@@ -2157,7 +2188,7 @@
       e.preventDefault(); const s=cut.step*(e.shiftKey?10:1); cellMove('m',m[0]*s,m[1]*s);
     });
 
-    // v8.6 浮动条：拖动 + 最小化
+    // v8.7 浮动条：拖动 + 最小化
     function setupFloat(bar){
       const grip=bar.querySelector('.fb-grip'), min=bar.querySelector('.fb-min');
       const clampBar=()=>{
@@ -2182,7 +2213,7 @@
     setupFloat($('nudgeBar')); setupFloat($('cellBar'));
     window.addEventListener('resize',()=>{ $('nudgeBar')._clamp(); $('cellBar')._clamp(); });
 
-    // v8.6 提示条
+    // v8.7 提示条
     let toastT=null;
     function showToast(t,ms,sub){
       const el=$('toast'); el.textContent=t;
@@ -2201,7 +2232,7 @@
     try{ if(localStorage.getItem('eyeTool.paramLock')==='1') applyParamLock(true); }catch(e){}
     $('cutEvenBtn').onclick=()=>{ if(cut.ov.size&&!confirm('均分会同时清除所有已单独调整的格子，继续？')) return; evenSplit(); }; $('cutAllBtn').onclick=()=>{ cut.sel=allCells(); drawCut(); }; $('cutNoneBtn').onclick=()=>{ cut.sel.clear(); drawCut(); };
     $('cutZoom').addEventListener('input',()=>{ cut.zoom=Number($('cutZoom').value); drawCut(); });
-    $('qPrev').onclick=()=>gotoImg(cut.idx-1); $('qNext').onclick=()=>gotoImg(cut.idx+1);
+    $('qDel').onclick=delCurSource; $('qPrev').onclick=()=>gotoImg(cut.idx-1); $('qNext').onclick=()=>gotoImg(cut.idx+1);
     $('cutScroll').addEventListener('input',()=>{ const b=$('cutView'); b.scrollTop=(b.scrollHeight-b.clientHeight)*Number($('cutScroll').value)/1000; });
     $('cutView').addEventListener('scroll',syncCutScroll);
     $('cutGoBtn').onclick=cutAndExtract;
@@ -2984,6 +3015,7 @@
     function updateFavBtn(){
       const b=$('favBtn'); if(!b) return;
       const n=favTargets().length; b.disabled=!n; b.textContent=n?`⭐ 收藏 ${n} 个到仓库`:'⭐ 收藏到仓库';
+      const nc=state.items.filter(i=>i.checked).length, dc=$('delCheckedBtn'); dc.disabled=!nc; dc.textContent=nc?`删除 (${nc})`:'删除';
       const ca=$('checkAllBtn'); ca.disabled=!state.items.length;
       ca.textContent=(state.items.length&&state.items.every(i=>i.checked))?'取消勾选':'全选';
     }
@@ -3003,6 +3035,7 @@
         if(add.length){ await dbPut('items',add); vault.items.push(...add); }
         updateVaultBtn(); if($('vaultModal').classList.contains('open')) renderVault();
         setStatus(add.length?`已收藏 ${add.length} 个到仓库「待分类」${dup?`，${dup} 个已在仓库中，已跳过`:''}`:`这 ${dup} 个都已在仓库里了`);
+        if(add.length) showToast(`⭐ 已收藏 ${add.length} 个到仓库「待分类」`,2800,dup?`${dup} 个已在仓库中，已跳过`:''); else showToast(`这 ${dup} 个都已在仓库里了`,2400);
       }catch(e){ console.warn(e); setStatus('收藏失败：'+(e&&e.name||'存储错误')+'（可能是存储空间不足）'); }
       updateFavBtn();
     }
@@ -3106,6 +3139,67 @@
     $('vNewBtn').onclick=vNewCol; $('vRenameBtn').onclick=vRenameCol; $('vDelColBtn').onclick=vDelCol;
     $('favBtn').onclick=collectToVault;
     $('checkAllBtn').onclick=()=>{ const all=state.items.length&&state.items.every(i=>i.checked); state.items.forEach(i=>i.checked=!all); renderThumbs(); };
+    $('delCheckedBtn').onclick=()=>{
+      const n=state.items.filter(i=>i.checked).length; if(!n) return;
+      if(!confirm(`确认删除 ${n} 个？`)) return;
+      const cur=state.items[state.selected]; state.items=state.items.filter(i=>!i.checked);
+      state.selected=state.items.length?(cur&&state.items.includes(cur)?state.items.indexOf(cur):Math.min(Math.max(state.selected,0),state.items.length-1)):-1;
+      state.laidOut=false; renderThumbs(); syncItemControls(); renderPreview(); showToast(`已删除 ${n} 个`,1800);
+    };
+
+    // ---------- v8.7 缩略图框选 ----------
+    (function(){
+      const grid=$('thumbs'); let st=null;
+      const scroller=()=>{ let e=grid.parentElement; while(e&&e!==document.body){ const o=getComputedStyle(e).overflowY; if((o==='auto'||o==='scroll')&&e.scrollHeight>e.clientHeight) return e; e=e.parentElement; } return null; };
+      function update(){
+        if(!st||!st.drag) return;
+        const g=grid.getBoundingClientRect(), px=st.cx-g.left, py=st.cy-g.top;
+        const l=Math.min(st.sx,px), t=Math.min(st.sy,py), w=Math.abs(px-st.sx), h=Math.abs(py-st.sy);
+        Object.assign(st.el.style,{left:l+'px',top:t+'px',width:w+'px',height:h+'px'});
+        const L=g.left+l, T=g.top+t, R=L+w, B=T+h;
+        grid.querySelectorAll('.thumb').forEach(el=>{
+          const i=Number(el.dataset.index), it=state.items[i]; if(!it) return;
+          const b=el.getBoundingClientRect(), hit=b.right>L&&b.left<R&&b.bottom>T&&b.top<B;
+          const v=st.mode==='add'?(st.base[i]||hit):(st.base[i]&&!hit);
+          it.checked=v; el.classList.toggle('checked',v); const c=el.querySelector('.chk'); if(c) c.textContent=v?'✓':'';
+        });
+      }
+      function tick(){
+        if(!st||!st.drag||!st.sc) return;
+        const r=st.sc.getBoundingClientRect(), m=48; let d=0;
+        if(st.cy<r.top+m) d=-Math.min(24,Math.ceil((r.top+m-st.cy)/4)); else if(st.cy>r.bottom-m) d=Math.min(24,Math.ceil((st.cy-(r.bottom-m))/4));
+        if(d){ st.sc.scrollTop+=d; update(); }
+      }
+      function end(e){
+        if(!st||(e&&e.pointerId!==st.id)) return;
+        const was=st.drag; clearInterval(st.timer); if(st.el) st.el.remove(); st=null;
+        if(was){ mq.suppress=true; setTimeout(()=>{ mq.suppress=false; },120); renderThumbs(); }
+      }
+      document.addEventListener('pointerdown',e=>{
+        if(!mq.on||e.button>0||e.target.closest('.x')) return;
+        const g=grid.getBoundingClientRect(), pad=10;
+        if(e.clientX<g.left-pad||e.clientX>g.right+pad||e.clientY<g.top-pad||e.clientY>g.bottom+pad) return;
+        const t=e.target.closest('.thumb'), it=t&&state.items[Number(t.dataset.index)];
+        st={id:e.pointerId,x0:e.clientX,y0:e.clientY,sx:e.clientX-g.left,sy:e.clientY-g.top,cx:e.clientX,cy:e.clientY,drag:false,mode:(it&&it.checked)?'remove':'add',base:state.items.map(i=>!!i.checked)};
+      });
+      document.addEventListener('pointermove',e=>{
+        if(!st||e.pointerId!==st.id) return; st.cx=e.clientX; st.cy=e.clientY;
+        if(!st.drag){
+          if(Math.hypot(e.clientX-st.x0,e.clientY-st.y0)<6) return;
+          st.drag=true; try{ grid.setPointerCapture(e.pointerId); }catch(_){}
+          st.el=document.createElement('div'); st.el.className='mq-rect'; grid.appendChild(st.el);
+          st.sc=scroller(); st.timer=setInterval(tick,30);
+        }
+        update();
+      });
+      document.addEventListener('pointerup',end); document.addEventListener('pointercancel',end);
+      $('marqueeBtn').onclick=()=>{
+        mq.on=!mq.on; const b=$('marqueeBtn'); b.classList.toggle('active',mq.on); b.textContent=mq.on?'✓ 框选':'▭ 框选';
+        grid.classList.toggle('mq',mq.on); renderThumbs();
+        setStatus(mq.on?'框选已开启：在缩略图上拖动框选，点图勾选/取消；再点「框选」退出':'框选已关闭');
+      };
+    })();
+
 
     // ---------- 存档文件（Edge/Chrome 电脑版：授权一次后自动保存）+ 导出/导入 ----------
     const arch={ handle:null, perm:'none', err:'', timer:null, chain:Promise.resolve() };
@@ -3251,7 +3345,7 @@
     $('vExportBtn').onclick=archExport; $('vImportBtn').onclick=()=>$('vImportInput').click();
     $('vImportInput').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; await archImport(f); };
 
-    // ---------- v8.6 抠图配方 ----------
+    // ---------- v8.7 抠图配方 ----------
     const RC_SL=[['threshold','thresholdVal'],['merge','mergeVal'],['feather','featherVal'],['strayClean','strayCleanVal']];
     function rcRead(){ return {threshold:Number($('threshold').value),merge:Number($('merge').value),feather:Number($('feather').value),minArea:Number($('minArea').value)||1800,clean:$('cleanStrays').checked,strayClean:Number($('strayClean').value)}; }
     function rcRender(){
