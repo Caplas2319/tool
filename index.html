@@ -770,6 +770,28 @@
     [data-light].on { background: var(--accent-soft); border-color: var(--accent); }
     #tSwatch { display: inline-block; width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); vertical-align: middle; background: #fff; }
 
+  
+    /* ===== v8.6 ===== */
+    .fb-grip { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; padding: 0 8px; font-size: 18px; line-height: 30px; color: var(--muted); border-radius: 8px; flex: 0 0 auto; }
+    .fb-grip:active { cursor: grabbing; background: var(--accent-soft); }
+    .fb-min { min-width: 30px !important; flex: 0 0 auto; }
+    #cellBar .fb-head { display: flex; align-items: center; gap: 6px; }
+    #cellBar .fb-head .hint { flex: 1; text-align: center; }
+    #nudgeBar.mini button:not(.fb-min), #cellBar.mini .cb-row { display: none !important; }
+    #cellBar.mini { padding: 4px 8px; }
+    .vmove { position: relative; }
+    .vpop { display: none; position: absolute; left: 0; bottom: calc(100% + 6px); min-width: 170px; max-width: 70vw; max-height: min(50vh, 320px); overflow: auto; background: white; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.22); padding: 4px; z-index: 40; }
+    .vpop.open { display: block; }
+    .vpop button { display: block; width: 100%; text-align: left; border: 0; background: transparent; min-height: 34px; padding: 0 10px; border-radius: 7px; font-size: 13px; }
+    .vpop button:hover, .vpop button:active { background: var(--accent-soft); }
+    .vpop .none { padding: 8px 10px; font-size: 12px; color: var(--muted); }
+    #vAllBtn { margin-left: auto; }
+    #toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 56px); transform: translate(-50%, -8px); z-index: 100; max-width: 88vw; padding: 10px 16px; border-radius: 12px; background: rgba(28,36,40,.94); color: #fff; font-size: 13px; line-height: 1.5; white-space: pre-line; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.28); opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; }
+    #toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+    #toast small { display: block; opacity: .7; font-size: 11px; }
+    .recipe { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: grid; gap: 6px; }
+    .recipe-row { display: flex; gap: 6px; align-items: center; }
+    .recipe-row select { flex: 1; min-width: 0; min-height: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: white; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -871,6 +893,10 @@
           <label class="hint">清理强度</label>
           <div class="slider-row"><input id="strayClean" type="range" min="0" max="100" value="42"><span class="slider-value" id="strayCleanVal">42</span></div>
           <div class="note">透明 PNG 会保留所有非透明像素（包括黑色），只移除完全透明的区域。</div>
+          <div class="recipe">
+            <div class="recipe-row"><button class="small" id="rcSaveBtn">💾 保存配方</button></div>
+            <div class="recipe-row"><select id="rcSel"><option value="">选择配方…</option></select><button class="small" id="rcApplyBtn" disabled title="再次套用所选配方">↺ 调回</button><button class="small" id="rcDelBtn" disabled title="删除所选配方">🗑</button></div>
+          </div>
         </section>
 <section class="section">
           <h2>📐 眼底 &amp; 排版</h2>
@@ -1033,10 +1059,13 @@
   </div>
 </div>
 
-<div id="nudgeBar"><span class="hint" id="nudgeText"></span><button class="small" data-d="-10"></button><button class="small" data-d="-1"></button><button class="small" data-d="1"></button><button class="small" data-d="10"></button><button class="small" id="nudgeClose" title="取消选中">✕</button></div>
+<div id="toast" role="status"></div>
 
-<div id="cellBar">
-  <div class="cb-row"><span class="hint" id="cellText"></span><span class="cb-g"><button class="small step on" data-s="1">1px</button><button class="small step" data-s="5">5px</button><button class="small step" data-s="20">20px</button></span><button class="small" id="cellReset">还原</button><button class="small" id="cellDone">完成</button></div>
+<div id="nudgeBar" class="fb"><span class="fb-grip" title="拖动位置">⠿</span><span class="hint" id="nudgeText"></span><button class="small" data-d="-10"></button><button class="small" data-d="-1"></button><button class="small" data-d="1"></button><button class="small" data-d="10"></button><button class="small" id="nudgeClose" title="取消选中">✕</button><button class="small fb-min" title="最小化">━</button></div>
+
+<div id="cellBar" class="fb">
+  <div class="fb-head"><span class="fb-grip" title="拖动位置">⠿</span><span class="hint" id="cellText"></span><button class="small fb-min" title="最小化">━</button></div>
+  <div class="cb-row"><span class="cb-g"><button class="small step on" data-s="1">1px</button><button class="small step" data-s="5">5px</button><button class="small step" data-s="20">20px</button></span><button class="small" id="cellReset">还原</button><button class="small" id="cellDone">完成</button></div>
   <div class="cb-row">
     <span class="cb-g"><b>上边</b><button class="small" data-e="t" data-d="-1">▲</button><button class="small" data-e="t" data-d="1">▼</button></span>
     <span class="cb-g"><b>下边</b><button class="small" data-e="b" data-d="-1">▲</button><button class="small" data-e="b" data-d="1">▼</button></span>
@@ -1063,15 +1092,14 @@
     <div class="vault-head"><div class="preview-title">📦 仓库</div><button id="vCloseBtn" class="small">关闭</button></div>
     <div class="vault-bar">
       <div class="vrow"><select id="vCol"></select><button class="small" id="vNewBtn">＋ 新建集合</button><button class="small" id="vRenameBtn">重命名</button><button class="small" id="vDelColBtn">删除集合</button></div>
-      <div class="vrow"><span class="hint" id="vCount"></span><button class="small" id="vAllBtn">全选</button></div>
-      <div class="vrow"><span class="hint" id="vArchState"></span></div>
-      <div class="vrow"><button class="small" id="vLinkBtn">📄 选择存档文件</button><button class="small" id="vAuthBtn">恢复授权</button><button class="small" id="vUnlinkBtn">断开存档</button><button class="small" id="vExportBtn">⬇ 导出</button><button class="small" id="vImportBtn">⬆ 导入</button><input type="file" id="vImportInput" accept=".json,application/json" style="display:none"></div>
+            <div class="vrow"><span class="hint" id="vArchState"></span></div>
+      <div class="vrow"><span class="hint" id="vCount"></span><button class="small" id="vLinkBtn">📄 选择存档文件</button><button class="small" id="vAuthBtn">恢复授权</button><button class="small" id="vUnlinkBtn">断开存档</button><button class="small" id="vExportBtn">⬇ 导出</button><button class="small" id="vImportBtn">⬆ 导入</button><button class="small" id="vDelBtn" disabled>🗑 删除所选</button><input type="file" id="vImportInput" accept=".json,application/json" style="display:none"><button class="small" id="vAllBtn">全选</button></div>
     </div>
     <div class="vault-body"><div id="vGrid" class="vgrid"></div><div id="vEmpty">这里还没有眼柄</div></div>
     <div class="vault-foot">
-      <select id="vMoveTo"></select><button class="small" id="vMoveBtn" disabled>移动</button>
+      <div class="vmove"><button class="small" id="vMoveBtn" disabled>移动到… ▴</button><div class="vpop" id="vMovePop"></div></div>
       <span class="sp"></span>
-      <button class="small primary" id="vAddBtn" disabled>加入排版</button><button class="small" id="vDelBtn" disabled>删除</button>
+      <button class="small primary" id="vAddBtn" disabled>加入排版</button>
     </div>
   </div>
 </div>
@@ -1960,8 +1988,8 @@
     }
     async function cutAndExtract(){
       const src=state.sources[cut.idx];
-      if(!src||!cut.sel.size){ setStatus('请先上传素材并选中方块'); return; }
-      setStatus('切割抠图中...'); await new Promise(r=>setTimeout(r,30));
+      if(!src||!cut.sel.size){ setStatus('请先上传素材并选中方块'); showToast('请先上传素材并选中方块',2200); return; }
+      setStatus('切割抠图中...'); showToast('⏳ 正在切割并抠图…',0); await new Promise(r=>setTimeout(r,30));
       const st={threshold:Number($('threshold').value),merge:Number($('merge').value),feather:Number($('feather').value),minArea:Number($('minArea').value)||1000,clean:$('cleanStrays').checked,sc:Number($('strayClean').value)||42};
       const full=canvasFromImage(src.image), W=full.width, H=full.height;
       const useAlpha=hasUsefulAlpha(full.getContext('2d',{willReadFrequently:true}).getImageData(0,0,W,H).data);
@@ -1993,6 +2021,7 @@
       if(N>1&&$('cutAutoNext').checked&&cut.idx<N-1){ gotoImg(cut.idx+1); tail=`，已切到第 ${cut.idx+1} 张`; }
       else if(N>1){ updateQueue(); if(state.sources.every(x=>x.done)) tail=`，${N} 张全部完成，点「排版」排到预览上`; }
       setStatus(`切割完成：${out.length} 个图案${skipped?`，${skipped} 个方块没识别到内容`:''}${tail}`);
+      showToast(`✓ 已切割并抠图：${out.length} 个图案${skipped?`（${skipped} 个方块没识别到）`:''}`,3000,`容差 ${st.threshold} · 合并 ${st.merge} · 柔化 ${st.feather} · 最小面积 ${st.minArea} · 清理 ${st.clean?st.sc:'关'}`);
     }
     (function(){
       const cv=$('cutCanvas');
@@ -2034,7 +2063,7 @@
     // ② 选中切割线 + 方向键/按钮微调
     function updateNudge(){
       const bar=$('nudgeBar'), show=!!cut.ls&&$('cutView').style.display==='block'&&!!curImg();
-      bar.style.display=show?'flex':'none'; if(!show) return;
+      bar.style.display=show?'flex':'none'; if(!show) return; if(bar._clamp) bar._clamp();
       const x=cut.ls.ax==='x', n=(x?cut.xs:cut.ys).length;
       $('nudgeText').textContent=`${x?'竖':'横'}线 ${cut.ls.i+1}/${n}`;
       const lab=x?['◀◀','◀','▶','▶▶']:['▲▲','▲','▼','▼▼'];
@@ -2097,7 +2126,7 @@
     }
     function updateCellBar(){
       const show=cut.adj&&cut.es.size>0&&$('cutView').style.display==='block'&&!!curImg();
-      $('cellBar').style.display=show?'flex':'none'; if(show) $('cellText').textContent=`已选 ${cut.es.size} 格`;
+      $('cellBar').style.display=show?'flex':'none'; if(show){ $('cellText').textContent=`已选 ${cut.es.size} 格`; if($('cellBar')._clamp) $('cellBar')._clamp(); }
     }
     function applyAdjUI(){
       $('cutAdjBtn').classList.toggle('active',cut.adj); $('cutAdjBtn').textContent=cut.adj?'✋ 调整格子：开':'✋ 调整格子';
@@ -2127,6 +2156,40 @@
       const m=({ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]})[e.key]; if(!m) return;
       e.preventDefault(); const s=cut.step*(e.shiftKey?10:1); cellMove('m',m[0]*s,m[1]*s);
     });
+
+    // v8.6 浮动条：拖动 + 最小化
+    function setupFloat(bar){
+      const grip=bar.querySelector('.fb-grip'), min=bar.querySelector('.fb-min');
+      const clampBar=()=>{
+        if(bar.style.display==='none'||bar.style.transform!=='none') return;
+        const r=bar.getBoundingClientRect(), W=window.innerWidth, H=window.innerHeight;
+        bar.style.left=Math.max(0,Math.min(W-r.width,r.left))+'px'; bar.style.top=Math.max(0,Math.min(H-r.height,r.top))+'px';
+      };
+      bar._clamp=clampBar;
+      let sx=0,sy=0,ox=0,oy=0,on=false;
+      grip.addEventListener('pointerdown',e=>{
+        e.preventDefault(); const r=bar.getBoundingClientRect();
+        bar.style.left=r.left+'px'; bar.style.top=r.top+'px'; bar.style.bottom='auto'; bar.style.transform='none';
+        sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top; on=true; grip.setPointerCapture(e.pointerId);
+      });
+      grip.addEventListener('pointermove',e=>{
+        if(!on) return; const r=bar.getBoundingClientRect(), W=window.innerWidth, H=window.innerHeight;
+        bar.style.left=Math.max(0,Math.min(W-r.width,ox+e.clientX-sx))+'px'; bar.style.top=Math.max(0,Math.min(H-r.height,oy+e.clientY-sy))+'px';
+      });
+      ['pointerup','pointercancel'].forEach(t=>grip.addEventListener(t,()=>{ on=false; }));
+      min.addEventListener('click',()=>{ const m=bar.classList.toggle('mini'); min.textContent=m?'＋':'━'; min.title=m?'展开':'最小化'; clampBar(); });
+    }
+    setupFloat($('nudgeBar')); setupFloat($('cellBar'));
+    window.addEventListener('resize',()=>{ $('nudgeBar')._clamp(); $('cellBar')._clamp(); });
+
+    // v8.6 提示条
+    let toastT=null;
+    function showToast(t,ms,sub){
+      const el=$('toast'); el.textContent=t;
+      if(sub){ const sm=document.createElement('small'); sm.textContent=sub; el.appendChild(sm); }
+      el.classList.add('show'); clearTimeout(toastT); if(ms) toastT=setTimeout(()=>el.classList.remove('show'),ms);
+    }
+    $('toast').onclick=()=>{ clearTimeout(toastT); $('toast').classList.remove('show'); };
 
     // ④ 抠图参数锁
     function applyParamLock(on){
@@ -2885,6 +2948,8 @@
     // ---------- 仓库（IndexedDB 自动保存） ----------
     const PENDING='pending';
     const vault={ items:[], cols:[], cur:PENDING, sel:new Set(), db:null };
+    const rc={ list:[], cur:'' };
+    try{ const a=JSON.parse(localStorage.getItem('eyeTool.recipes')||'[]'); if(Array.isArray(a)) rc.list=a; }catch(e){}
     const uid=()=>crypto.randomUUID?.()||(Date.now().toString(36)+Math.random().toString(36).slice(2));
     const idbReq=r=>new Promise((res,rej)=>{ r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
     function dbTx(name,fn){ return new Promise((res,rej)=>{ const tx=vault.db.transaction(name,'readwrite'); const s=tx.objectStore(name); fn(s); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error); }); }
@@ -2899,10 +2964,11 @@
         const tx=n=>vault.db.transaction(n).objectStore(n);
         vault.items=await idbReq(tx('items').getAll()); vault.cols=await idbReq(tx('cols').getAll());
         vault.items.sort((a,b)=>a.created-b.created); vault.cols.sort((a,b)=>a.order-b.order);
+        try{ const rr=await idbReq(tx('meta').get('recipes')); if(rr&&Array.isArray(rr.list)) rc.list=rr.list; }catch(e){}
         vault.items.forEach(it=>it.url=URL.createObjectURL(it.blob));
         try{ navigator.storage?.persist?.(); }catch(e){}
       }catch(e){ console.warn('仓库不可用',e); vault.db=null; }
-      updateVaultBtn(); updateArchUI();
+      updateVaultBtn(); updateArchUI(); rcRender();
       if(vault.db) archRestore();
       if(vault.db) trialRestore();
     }
@@ -2948,8 +3014,9 @@
       if(!opts.some(o=>o.id===vault.cur)) vault.cur=PENDING;
       const sel=$('vCol'); sel.innerHTML='';
       opts.forEach(o=>sel.add(new Option(`${o.name} (${counts[o.id]||0})`,o.id))); sel.value=vault.cur;
-      const mv=$('vMoveTo'); mv.innerHTML=''; mv.add(new Option('移动到…',''));
-      opts.filter(o=>o.id!==vault.cur).forEach(o=>mv.add(new Option(o.name,o.id)));
+      const pop=$('vMovePop'); pop.innerHTML=''; const others=opts.filter(o=>o.id!==vault.cur);
+      if(!others.length){ const d=document.createElement('div'); d.className='none'; d.textContent='还没有其他集合，先新建一个'; pop.appendChild(d); }
+      others.forEach(o=>{ const b=document.createElement('button'); b.textContent=`${o.name} (${counts[o.id]||0})`; b.onclick=()=>vMove(o.id); pop.appendChild(b); });
       const list=vaultList();
       vault.sel.forEach(id=>{ if(!list.some(i=>i.id===id)) vault.sel.delete(id); });
       const grid=$('vGrid'); grid.innerHTML='';
@@ -2966,18 +3033,19 @@
     }
     function updateVaultBar(){
       const list=vaultList(), n=vault.sel.size;
-      $('vCount').textContent=`共 ${list.length} 个 · 已选 ${n} 个`;
+      $('vCount').textContent=`共 ${list.length} 个，已选 ${n} 个`;
       $('vAllBtn').disabled=!list.length; $('vAllBtn').textContent=(list.length&&n===list.length)?'取消全选':'全选';
       $('vMoveBtn').disabled=!n; $('vAddBtn').disabled=!n; $('vDelBtn').disabled=!n;
       $('vAddBtn').textContent=n?`加入排版 (${n})`:'加入排版';
+      $('vDelBtn').textContent=n?`🗑 删除所选 (${n})`:'🗑 删除所选'; if(!n) $('vMovePop').classList.remove('open');
     }
     function openVault(){
       if(!vault.db){ setStatus('仓库不可用：浏览器不支持或被禁用了本地存储'); return; }
       vault.sel.clear(); renderVault(); $('vaultModal').classList.add('open');
     }
-    function closeVault(){ $('vaultModal').classList.remove('open'); }
-    async function vMove(){
-      const to=$('vMoveTo').value; if(!to||!vault.sel.size) return;
+    function closeVault(){ $('vaultModal').classList.remove('open'); $('vMovePop').classList.remove('open'); }
+    async function vMove(to){
+      $('vMovePop').classList.remove('open'); if(!to||!vault.sel.size) return;
       const moved=vault.items.filter(i=>vault.sel.has(i.id)); moved.forEach(i=>i.col=to);
       try{ await dbPut('items',moved); }catch(e){ console.warn(e); setStatus('移动失败'); }
       vault.sel.clear(); renderVault(); setStatus(`已移动 ${moved.length} 个到「${colName(to)}」`);
@@ -3002,7 +3070,7 @@
     }
     async function vDelete(){
       const picks=vaultList().filter(i=>vault.sel.has(i.id)); if(!picks.length) return;
-      if(!confirm(`从仓库永久删除选中的 ${picks.length} 个眼柄？`)) return;
+      if(!confirm(`确认删除 ${picks.length} 个眼柄？\n（从仓库永久删除，无法恢复）`)) return;
       try{ await dbDel('items',picks.map(i=>i.id)); }catch(e){ console.warn(e); setStatus('删除失败'); return; }
       picks.forEach(i=>URL.revokeObjectURL(i.url)); const ids=new Set(picks.map(i=>i.id));
       vault.items=vault.items.filter(i=>!ids.has(i.id)); vault.sel.clear(); renderVault(); updateVaultBtn(); setStatus(`已删除 ${picks.length} 个`);
@@ -3032,7 +3100,9 @@
     $('vaultModal').addEventListener('click',e=>{ if(e.target===$('vaultModal')) closeVault(); });
     $('vCol').onchange=()=>{ vault.cur=$('vCol').value; vault.sel.clear(); renderVault(); };
     $('vAllBtn').onclick=()=>{ const l=vaultList(); if(l.length&&vault.sel.size===l.length) vault.sel.clear(); else l.forEach(i=>vault.sel.add(i.id)); renderVault(); };
-    $('vMoveBtn').onclick=vMove; $('vAddBtn').onclick=vAddToLayout; $('vDelBtn').onclick=vDelete;
+    $('vMoveBtn').onclick=()=>{ if(!$('vMoveBtn').disabled) $('vMovePop').classList.toggle('open'); };
+    document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.vmove')) $('vMovePop').classList.remove('open'); });
+    $('vAddBtn').onclick=vAddToLayout; $('vDelBtn').onclick=vDelete;
     $('vNewBtn').onclick=vNewCol; $('vRenameBtn').onclick=vRenameCol; $('vDelColBtn').onclick=vDelCol;
     $('favBtn').onclick=collectToVault;
     $('checkAllBtn').onclick=()=>{ const all=state.items.length&&state.items.every(i=>i.checked); state.items.forEach(i=>i.checked=!all); renderThumbs(); };
@@ -3053,7 +3123,7 @@
         let p=b64.get(it.id); if(!p){ p=await toB64(it.blob); b64.set(it.id,p); }
         items.push({id:it.id,col:it.col,hash:it.hash,w:it.w,h:it.h,sourceName:it.sourceName,created:it.created,png:p});
       }
-      return JSON.stringify({format:'bjd-eye-vault',version:1,savedAt:new Date().toISOString(),cols:vault.cols.map(c=>({id:c.id,name:c.name,order:c.order})),items});
+      return JSON.stringify({format:'bjd-eye-vault',version:1,savedAt:new Date().toISOString(),recipes:rc.list,cols:vault.cols.map(c=>({id:c.id,name:c.name,order:c.order})),items});
     }
     async function mergeArchive(data){
       if(!data||data.format!=='bjd-eye-vault'||!Array.isArray(data.items)) throw new Error('bad archive');
@@ -3074,6 +3144,11 @@
       }
       if(newCols.length){ vault.cols.push(...newCols); vault.cols.sort((a,b)=>a.order-b.order); await dbPut('cols',newCols); }
       if(add.length){ vault.items.push(...add); vault.items.sort((a,b)=>a.created-b.created); await dbPut('items',add); }
+      if(Array.isArray(data.recipes)){
+        const have=new Set(rc.list.map(r=>r.name)); let got=false;
+        data.recipes.forEach(r=>{ if(r&&r.name&&r.p&&typeof r.p==='object'&&!have.has(r.name)){ have.add(r.name); rc.list.push({id:r.id||uid(),name:String(r.name),p:r.p,t:r.t||Date.now()}); got=true; } });
+        if(got){ rcRender(); await rcPersist(); }
+      }
       updateVaultBtn(); if($('vaultModal').classList.contains('open')) renderVault();
       return add.length;
     }
@@ -3175,6 +3250,45 @@
     $('vLinkBtn').onclick=archLink; $('vAuthBtn').onclick=archAuth; $('vUnlinkBtn').onclick=archUnlink;
     $('vExportBtn').onclick=archExport; $('vImportBtn').onclick=()=>$('vImportInput').click();
     $('vImportInput').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; await archImport(f); };
+
+    // ---------- v8.6 抠图配方 ----------
+    const RC_SL=[['threshold','thresholdVal'],['merge','mergeVal'],['feather','featherVal'],['strayClean','strayCleanVal']];
+    function rcRead(){ return {threshold:Number($('threshold').value),merge:Number($('merge').value),feather:Number($('feather').value),minArea:Number($('minArea').value)||1800,clean:$('cleanStrays').checked,strayClean:Number($('strayClean').value)}; }
+    function rcRender(){
+      const sel=$('rcSel'); sel.innerHTML=''; sel.add(new Option(rc.list.length?'选择配方…':'（还没有配方）',''));
+      rc.list.forEach(r=>sel.add(new Option(r.name,r.id)));
+      if(!rc.list.some(r=>r.id===rc.cur)) rc.cur=''; sel.value=rc.cur;
+      $('rcApplyBtn').disabled=$('rcDelBtn').disabled=!rc.cur;
+    }
+    function rcPersist(){
+      try{ localStorage.setItem('eyeTool.recipes',JSON.stringify(rc.list)); }catch(e){}
+      if(!vault.db) return Promise.resolve();
+      return dbTx('meta',s=>s.put({k:'recipes',list:rc.list})).then(()=>scheduleArchive()).catch(e=>{ console.warn(e); setStatus('配方保存失败'); });
+    }
+    function rcApply(id){
+      const r=rc.list.find(x=>x.id===id); if(!r) return; const p=r.p;
+      RC_SL.forEach(([k,v])=>{ if(p[k]==null) return; $(k).value=p[k]; $(v).textContent=$(k).value; $(k).dispatchEvent(new Event('input',{bubbles:true})); });
+      if(p.minArea!=null){ $('minArea').value=p.minArea; $('minArea').dispatchEvent(new Event('input',{bubbles:true})); }
+      if(p.clean!=null){ $('cleanStrays').checked=!!p.clean; $('cleanStrays').dispatchEvent(new Event('change',{bubbles:true})); }
+      showToast(`已套用配方「${r.name}」`,2200,'需要重新点「切割并抠图」才会生效');
+      setStatus(`已套用配方「${r.name}」，点「切割并抠图」生效`);
+    }
+    async function rcSave(){
+      const cur=rc.list.find(x=>x.id===rc.cur);
+      const name=(prompt('配方名称',cur?cur.name:'配方'+(rc.list.length+1))||'').trim(); if(!name) return;
+      const same=rc.list.find(x=>x.name===name);
+      if(same&&!confirm(`已有配方「${name}」，覆盖它？`)) return;
+      if(same){ same.p=rcRead(); same.t=Date.now(); rc.cur=same.id; }
+      else { const n={id:uid(),name,p:rcRead(),t:Date.now()}; rc.list.push(n); rc.cur=n.id; }
+      rcRender(); await rcPersist(); showToast(`✓ 已保存配方「${name}」`,2000);
+    }
+    async function rcDel(){
+      const r=rc.list.find(x=>x.id===rc.cur); if(!r||!confirm(`删除配方「${r.name}」？`)) return;
+      rc.list=rc.list.filter(x=>x.id!==r.id); rc.cur=''; rcRender(); await rcPersist(); showToast('已删除配方',1800);
+    }
+    $('rcSaveBtn').onclick=rcSave; $('rcDelBtn').onclick=rcDel;
+    $('rcApplyBtn').onclick=()=>rcApply(rc.cur);
+    $('rcSel').onchange=()=>{ rc.cur=$('rcSel').value; $('rcApplyBtn').disabled=$('rcDelBtn').disabled=!rc.cur; if(rc.cur) rcApply(rc.cur); };
 
     vaultInit();
 
